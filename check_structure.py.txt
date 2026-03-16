@@ -1,0 +1,20 @@
+import os
+
+structure = [
+    "app.py",
+    "requirements.txt",
+    "core/database.py",
+    "core/upload_lock.py",
+    "core/validator.py",
+    "core/cleaner.py",
+    "core/importer.py",
+    "modules/upload_page.py",
+    "modules/dashboard_page.py",
+    "modules/monitoring_page.py",
+]
+
+for file in structure:
+    if os.path.exists(file):
+        print("OK :", file)
+    else:
+        print("MISSING :", file)
