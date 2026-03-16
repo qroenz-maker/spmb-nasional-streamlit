@@ -1,5 +1,4 @@
 import streamlit as st
-import hashlib
 import time
 import uuid
 import extra_streamlit_components as stx
@@ -34,38 +33,93 @@ if "db_initialized" not in st.session_state:
 # =========================
 if "login" not in st.session_state:
     st.session_state.login = False
+    st.session_state.username = None
+    st.session_state.role = None
+    st.session_state.npsn = None
 
 # =========================
-# SIDEBAR / MENU (contoh)
+# COOKIE MANAGER (LOGIN)
 # =========================
-if st.session_state.login:
-    menu = st.sidebar.radio(
-        "Menu",
-        [
-            "Dashboard",
-            "Upload Data",
-            "Monitoring",
-            "Konflik NIK",
-            "Manajemen User",
-            "Export Dinas",
-            "Template"
-        ]
-    )
+cookie_manager = stx.CookieManager()
 
-    if menu == "Dashboard":
-        show_dashboard()
-    elif menu == "Upload Data":
-        show_upload(st.session_state.get("npsn"))
-    elif menu == "Monitoring":
-        show_monitoring()
-    elif menu == "Konflik NIK":
-        show_konflik()
-    elif menu == "Manajemen User":
-        show_users()
-    elif menu == "Export Dinas":
-        show_export_dinas()
-    elif menu == "Template":
-        show_template()
+# =========================
+# LOGIN PAGE (SIMPLE)
+# =========================
+def show_login():
+    st.title("🔐 Login SPMB Nasional")
 
-else:
-    st.info("Silakan login terlebih dahulu")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        # ⛔️ login logic ada di module login Anda
+        # di sini hanya contoh set session
+        st.session_state.login = True
+        st.session_state.username = username
+        st.session_state.role = "DINAS"  # atau OPERATOR
+        st.session_state.npsn = None
+        cookie_manager.set("spmb_login", "1")
+        st.success("Login berhasil")
+        time.sleep(0.5)
+        st.rerun()
+
+# =========================
+# LOGOUT
+# =========================
+def do_logout():
+    cookie_manager.delete("spmb_login")
+    st.session_state.clear()
+    time.sleep(0.2)
+    st.rerun()
+
+# =========================
+# MAIN APP
+# =========================
+if not st.session_state.login:
+    show_login()
+    st.stop()
+
+# =========================
+# SIDEBAR
+# =========================
+st.sidebar.title("🎓 SPMB Nasional")
+
+menu_list = [
+    "Dashboard",
+    "Upload Data",
+    "Monitoring",
+    "Konflik NIK",
+    "Manajemen User",
+    "Export Dinas",
+    "Template"
+]
+
+menu = st.sidebar.radio("Menu", menu_list)
+st.sidebar.divider()
+
+if st.sidebar.button("Logout"):
+    do_logout()
+
+# =========================
+# PAGE ROUTER
+# =========================
+if menu == "Dashboard":
+    show_dashboard()
+
+elif menu == "Upload Data":
+    show_upload(st.session_state.npsn)
+
+elif menu == "Monitoring":
+    show_monitoring()
+
+elif menu == "Konflik NIK":
+    show_konflik()
+
+elif menu == "Manajemen User":
+    show_users()
+
+elif menu == "Export Dinas":
+    show_export_dinas()
+
+elif menu == "Template":
+    show_template()
