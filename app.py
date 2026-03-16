@@ -12,6 +12,10 @@ from modules.upload_page import show_upload
 from modules.konflik_page import show_konflik
 from modules.monitoring_page import show_monitoring
 from modules.template_page import show_template
+from modules.validation_engine import validate_dataframe, detect_nik_conflict
+
+print("Import berhasil")
+
 
 # =========================
 # CONFIG
