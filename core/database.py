@@ -2,22 +2,30 @@ import psycopg2
 import streamlit as st
 import hashlib
 
+# =========================
+# CONNECTION
+# =========================
 def get_connection():
     return psycopg2.connect(
         st.secrets["DATABASE_URL"],
-        sslmode="require"
+        sslmode="require",
+        connect_timeout=10
     )
 
+# =========================
+# PASSWORD HASH
+# =========================
 def hash_pw(pw: str) -> str:
     return hashlib.sha256(pw.encode()).hexdigest()
 
+# =========================
+# INIT DATABASE (SAFE)
+# =========================
 def init_db():
     conn = get_connection()
     c = conn.cursor()
 
-    # =========================
     # USERS
-    # =========================
     c.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -28,9 +36,7 @@ def init_db():
     )
     """)
 
-    # =========================
     # STUDENTS (NIK UNIK NASIONAL)
-    # =========================
     c.execute("""
     CREATE TABLE IF NOT EXISTS students (
         id SERIAL PRIMARY KEY,
@@ -53,9 +59,7 @@ def init_db():
     )
     """)
 
-    # =========================
     # KONFLIK
-    # =========================
     c.execute("""
     CREATE TABLE IF NOT EXISTS conflicts (
         id SERIAL PRIMARY KEY,
@@ -68,9 +72,7 @@ def init_db():
     )
     """)
 
-    # =========================
-    # SESSION
-    # =========================
+    # SESSION LOGIN
     c.execute("""
     CREATE TABLE IF NOT EXISTS sessions (
         token TEXT PRIMARY KEY,
@@ -79,18 +81,16 @@ def init_db():
     )
     """)
 
-    # =========================
     # DEFAULT USERS
-    # =========================
     c.execute("""
-    INSERT INTO users (username,password,role,npsn)
-    VALUES (%s,%s,%s,%s)
+    INSERT INTO users (username, password, role, npsn)
+    VALUES (%s, %s, %s, %s)
     ON CONFLICT (username) DO NOTHING
     """, ("dinas", hash_pw("dinas123"), "DINAS", None))
 
     c.execute("""
-    INSERT INTO users (username,password,role,npsn)
-    VALUES (%s,%s,%s,%s)
+    INSERT INTO users (username, password, role, npsn)
+    VALUES (%s, %s, %s, %s)
     ON CONFLICT (username) DO NOTHING
     """, ("operator1", hash_pw("operator123"), "OPERATOR", "12345678"))
 
