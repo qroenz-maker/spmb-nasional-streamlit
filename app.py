@@ -1,6 +1,5 @@
 import streamlit as st
 import hashlib
-import sqlite3
 import time
 import uuid
 import extra_streamlit_components as stx
