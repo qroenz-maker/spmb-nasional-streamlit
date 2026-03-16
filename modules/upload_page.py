@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-
-from core.database import get_connection
+from core.database import get_connection, hash_pw
 from modules.validation_engine import validate_dataframe, detect_nik_conflict
-
 
 def show_upload(npsn_operator):
     st.title("📤 Upload Data SPMB Nasional")
@@ -64,17 +62,19 @@ def show_upload(npsn_operator):
     # CEK KONFLIK NIK NASIONAL
     # ============================
     conn = get_connection()
+    cur = conn.cursor()
+
     konflik = detect_nik_conflict(df_operator, conn)
 
     if not konflik.empty:
         st.warning("Ditemukan konflik NIK nasional")
 
         for _, r in konflik.iterrows():
-            conn.execute(
+            cur.execute(
                 """
                 INSERT INTO conflicts
                 (npsn_operator, row_no, kolom, nilai, alasan)
-                VALUES (?,?,?,?,?)
+                VALUES (%s,%s,%s,%s,%s)
                 """,
                 (
                     npsn_operator,
@@ -87,6 +87,8 @@ def show_upload(npsn_operator):
 
         conn.commit()
         st.dataframe(konflik, use_container_width=True)
+        cur.close()
+        conn.close()
         st.stop()
 
     # ============================
@@ -95,13 +97,39 @@ def show_upload(npsn_operator):
     df_operator = df_operator.copy()
     df_operator["uploaded_by"] = st.session_state.username
 
-    df_operator.to_sql(
-        "students",
-        conn,
-        if_exists="append",
-        index=False
-    )
+    # Masukkan satu per satu (lebih aman untuk PostgreSQL)
+    for _, row in df_operator.iterrows():
+        cur.execute(
+            """
+            INSERT INTO students (
+                npsn_sekolah_asal, nama_sekolah_asal, nik, nisn, nama,
+                tempat_lahir, tanggal_lahir, jenis_kelamin, nama_ibu_kandung,
+                agama_id, kebutuhan_khusus_id, nomor_kk, npsn_sekolah_tujuan,
+                nama_sekolah_tujuan, uploaded_by
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (nik) DO NOTHING
+            """,
+            (
+                row["npsn_sekolah_asal"],
+                row["nama_sekolah_asal"],
+                str(row["nik"]),
+                str(row["nisn"]),
+                row["nama"],
+                row["tempat_lahir"],
+                pd.to_datetime(row["tanggal_lahir"]).date(),
+                row["jenis_kelamin"],
+                row["nama_ibu_kandung"],
+                row.get("agama_id"),
+                row.get("kebutuhan_khusus_id"),
+                row.get("nomor_kk"),
+                row["npsn_sekolah_tujuan"],
+                row["nama_sekolah_tujuan"],
+                row["uploaded_by"]
+            )
+        )
 
+    conn.commit()
+    cur.close()
     conn.close()
 
     st.success(f"Upload berhasil: {len(df_operator)} data")
