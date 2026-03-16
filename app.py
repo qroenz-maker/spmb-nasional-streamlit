@@ -1,4 +1,8 @@
 import streamlit as st
+st.write("Secrets:", st.secrets)
+st.stop()
+
+import streamlit as st
 import time
 import uuid
 import hashlib
