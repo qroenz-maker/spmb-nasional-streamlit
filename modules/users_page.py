@@ -2,8 +2,9 @@ import streamlit as st
 import hashlib
 import pandas as pd
 import io
+import psycopg2  # pakai psycopg2 untuk PostgreSQL
 
-DB = "data/database.db"
+DB_URL = st.secrets["DATABASE_URL"]
 DEFAULT_PASSWORD = "123456"
 
 # ===============================
@@ -11,11 +12,11 @@ DEFAULT_PASSWORD = "123456"
 # ===============================
 
 def get_conn():
-    return sqlite3.connect(DB, check_same_thread=False)
-
-def hash_pw(pw):
-    return hashlib.sha256(pw.encode()).hexdigest()
-
+    return psycopg2.connect(
+        DB_URL,
+        sslmode="require",
+        connect_timeout=10
+    )
 # ===============================
 # PAGE
 # ===============================
